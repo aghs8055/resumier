@@ -1,0 +1,9 @@
+Django==5.2.9
+djangorestframework==3.16.1
+langchain==1.1.0
+langchain-openai==1.1.0
+langfuse==3.10.3
+langgraph==1.0.4
+openai==2.8.1
+pydantic==2.12.5
+requests==2.32.5
