@@ -1,0 +1,108 @@
+services:
+  app:
+    container_name: resumier-server
+    build: .
+    command: gunicorn resumier.wsgi:application --workers 5 --bind 0.0.0.0:8000
+    restart: always
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - resumier-network
+  celery:
+    container_name: resumier-celery
+    build: .
+    command: celery -A resumier worker --concurrency=10 --loglevel=INFO -Ofair -Q default
+    restart: always
+    env_file:
+      - .env
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    networks:
+      - resumier-network
+  rabbitmq:
+    container_name: resumier-rabbitmq
+    image: rabbitmq:4.2-alpine
+    restart: always
+    env_file:
+      - .env
+    healthcheck:
+      test: ["CMD-SHELL", "rabbitmq-diagnostics -q ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    environment:
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_DEFAULT_USER}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_DEFAULT_PASS}
+      - RABBITMQ_DEFAULT_VHOST=${RABBITMQ_DEFAULT_VHOST}
+    volumes:
+      - rabbit_vol:/var/lib/rabbitmq
+    networks:
+      - resumier-network
+  postgres:
+    container_name: resumier-pg
+    image: postgres:18.1-alpine
+    restart: always
+    env_file:
+      - .env
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    environment:
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME}
+    volumes:
+      - pg_vol:/var/lib/postgresql/data
+    networks:
+      - resumier-network
+  redis:
+    container_name: resumier-redis
+    image: redis:8.4-alpine
+    restart: always
+    env_file:
+      - .env
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    volumes:
+      - redis_vol:/data
+    networks:
+      - resumier-network
+
+  nginx:
+    container_name: resumier-nginx
+    build: ./nginx
+    restart: always
+    ports:
+      - "3000:80"
+    networks:
+      - resumier-network
+
+volumes:
+  pg_vol:
+  rabbit_vol:
+  redis_vol:
+
+networks:
+  resumier-network:
+    driver: bridge
+  
