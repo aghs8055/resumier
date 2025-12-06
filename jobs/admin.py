@@ -18,12 +18,10 @@ class OpportunityAdmin(admin.ModelAdmin):
         "location__name",
         "contract_type",
         "experience_level",
-        "category",
     ]
     list_filter = [
         "contract_type",
         "experience_level",
-        "category",
         "military_service",
         "gender",
         "currency",

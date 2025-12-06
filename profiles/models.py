@@ -5,7 +5,8 @@ from accounts.models import User
 from profiles.enums import Gender, MilitaryService, LanguageLevel, MaritalStatus, Platform, SkillLevel
 from locations.models import Location
 from locations.enums import LocationType
-from common.enums import EducationLevel, ContractType
+from common.enums import EducationLevel, ContractType, ExperienceLevel, Currency, ProcessStatus
+from profiles.storages import ResumeStorage
 
 
 class Profile(models.Model):
@@ -15,6 +16,10 @@ class Profile(models.Model):
     gender = models.CharField(max_length=255, choices=Gender.choices(), null=True, blank=True)
     military_service = models.CharField(max_length=255, choices=MilitaryService.choices(), null=True, blank=True)
     marital_status = models.CharField(max_length=255, choices=MaritalStatus.choices(), null=True, blank=True)
+    location = models.ManyToManyField(Location, related_name='profiles')
+    picture = models.ImageField(null=True, )
+    description = models.TextField(null=True, blank=True)
+    ai_summary = models.TextField(null=True, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -129,7 +134,7 @@ class Project(models.Model):
     description = models.TextField(blank=True)
     url = models.URLField(blank=True)
     start_date = models.DateField()
-    end_date = models.DateField()
+    end_date = models.DateField(null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -234,16 +239,32 @@ class Research(models.Model):
 
 
 class Preferences(models.Model):
-    profile = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='preferences')
+    profile = models.OneToOneField(Profile, on_delete=models.CASCADE, related_name='preferences')
     location_type = ArrayField(models.CharField(max_length=255, choices=LocationType.choices()), null=True, blank=True)
     locations = models.ManyToManyField(Location, related_name='preferences')
+    minimum_experience_level = models.CharField(max_length=255, choices=ExperienceLevel.choices(), null=True, blank=True)
+    maximum_experience_level = models.CharField(max_length=255, choices=ExperienceLevel.choices(), null=True, blank=True)
+    minimum_salary = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    currency = models.CharField(max_length=255, choices=Currency.choices(), null=True, blank=True)
+    languages = models.ManyToManyField(Language, related_name='preferences')
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    def __str__(self):
-        return self.location_type
-
     class Meta:
         verbose_name = 'Preferences'
         verbose_name_plural = 'Preferences'
+
+
+class ResumeFile(models.Model):
+    profile = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='resume_files')
+    file = models.FileField(upload_to='', storage=ResumeStorage())
+    process_status = models.CharField(max_length=32, choices=ProcessStatus.choices())
+    raw_data = models.JSONField(null=True, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Resume File'
+        verbose_name_plural = 'Resume Files'

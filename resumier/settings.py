@@ -26,7 +26,8 @@ SECRET_KEY = 'django-insecure-=f@qc^(f=uk4iut)u#vu6^mc1qtc9vs4y4n$4l!&97h(tdp#(b
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+CSRF_TRUSTED_ORIGINS = os.environ.get('CSRF_TRUSTED_ORIGINS', 'http://localhost:3000,https://localhost:3000').split(',')
 
 
 # Application definition
@@ -44,7 +45,7 @@ INSTALLED_APPS = [
     'accounts',
     'locations',
     'companies',
-    'profile',
+    'profiles',
     'jobs',
     'applications',
 ]
@@ -157,3 +158,19 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Default auth user
 AUTH_USER_MODEL = 'accounts.User'
+
+# Candoo HR clients
+CANDOO_HR_CLIENTS = {
+    "Yektanet": {
+        "address": "careers.yektanet.com",
+        "auth_key": os.getenv("YEKTANET_AUTH_KEY"),
+    },
+}
+
+# LLM settings
+LLM_SETTINGS = {
+    "default": {
+        "base_url": os.getenv("LLM_BASE_URL"),
+        "api_key": os.getenv("LLM_API_KEY"),
+    },
+}
