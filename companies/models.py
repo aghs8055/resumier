@@ -20,7 +20,7 @@ class Perk(TimedModel, EmbeddedModelLargeMixin):
         return f"{self.name}: {self.description}"
     
     @classmethod
-    def create_from_base_model(cls, base_model):
+    def create_from_schema(cls, base_model):
         return cls.objects.create(name=base_model.name, description=base_model.description)
 
     def __str__(self):

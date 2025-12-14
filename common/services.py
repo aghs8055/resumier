@@ -5,17 +5,22 @@ from openai import OpenAI
 from django.conf import settings
 from pydantic import BaseModel, Field, ConfigDict
 
-from common.prompts import EMBEDDING_SERVICE_SYSTEM_PROMPT_V1, EMBEDDING_SERVICE_USER_PROMPT_V1
-from common.models import EmbeddedModelSmallMixin, EmbeddedModelLargeMixin
+from common.prompts import (
+    EMBEDDING_SERVICE_SYSTEM_PROMPT_V1,
+    EMBEDDING_SERVICE_USER_PROMPT_V1,
+    AI_GENERATABLE_SERVICE_SYSTEM_PROMPT_V1,
+    AI_GENERATABLE_SERVICE_USER_PROMPT_V1,
+)
+from common.models import EmbeddedModelSmallMixin, EmbeddedModelLargeMixin, AIGeneratableMixin
 
 
-T = TypeVar("T", bound=EmbeddedModelSmallMixin | EmbeddedModelLargeMixin)
+EmbeddingModelType = TypeVar("T", bound=EmbeddedModelSmallMixin | EmbeddedModelLargeMixin)
 
 
-class EmbeddingService(Generic[T]):
+class EmbeddingService(Generic[EmbeddingModelType]):
     def __init__(
         self,
-        model: Type[T],
+        model: Type[EmbeddingModelType],
         llm_model: str = "gpt-5-mini",
         embedding_model: str = "text-embedding-3-large",
     ):
@@ -24,7 +29,9 @@ class EmbeddingService(Generic[T]):
         self.embedding_model = embedding_model
         self.client = OpenAI(**settings.LLM_SETTINGS["default"])
 
-    def get_similar_items(self, embedding: List[float], k: int = 10, threshold: float = 1.0) -> List[T]:
+    def get_similar_items(
+        self, embedding: List[float], k: int = 10, threshold: float = 1.0
+    ) -> List[EmbeddingModelType]:
         return [
             vars(obj)
             for obj in self.model.objects.annotate(distance=CosineDistance("embedding", embedding))
@@ -32,7 +39,7 @@ class EmbeddingService(Generic[T]):
             .filter(distance__lte=threshold)[:k]
         ]
 
-    def get_or_create_item(self, key: str, k: int = 10, threshold: float = 1.0) -> T:
+    def get_or_create_item(self, key: str, k: int = 10, threshold: float = 1.0) -> EmbeddingModelType:
         class ObjectSelection(BaseModel):
             model_config = ConfigDict(extra="forbid")
             object_id: int = Field(..., description="The ID of the object to select")
@@ -62,4 +69,36 @@ class EmbeddingService(Generic[T]):
         if isinstance(resp.result, ObjectSelection):
             return self.model.objects.get(id=resp.result.object_id)
         else:
-            return self.model.create_from_base_model(resp.result)
+            return self.model.create_from_schema(resp.result)
+
+
+AIGeneratableModelType = TypeVar("AIGeneratableModelType", bound=AIGeneratableMixin)
+
+
+class AIGeneratableService(Generic[AIGeneratableModelType]):
+    def __init__(self, model: Type[AIGeneratableModelType], llm_model: str = "gpt-5-mini"):
+        self.model = model
+        self.llm_model = llm_model
+        self.client = OpenAI(**settings.LLM_SETTINGS["default"])
+
+    def generate_model_from_raw_data(self, raw_data: dict) -> AIGeneratableModelType:
+        class Result(BaseModel):
+            model_config = ConfigDict(extra="forbid")
+            summary: str = Field(..., description="The summary of the model")
+            model: self.model.ModelBaseModel = Field(..., description="The model")
+
+        resp = self.client.responses.parse(
+            model=self.llm_model,
+            input=[
+                {
+                    "role": "system",
+                    "content": AI_GENERATABLE_SERVICE_SYSTEM_PROMPT_V1.format(model_schema=self.model.get_schema()),
+                },
+                {
+                    "role": "user",
+                    "content": AI_GENERATABLE_SERVICE_USER_PROMPT_V1.format(raw_data=raw_data),
+                },
+            ],
+            text_format=Result,
+        )
+        return self.model.create_from_ai_data(resp.summary, raw_data, resp.output_parsed)

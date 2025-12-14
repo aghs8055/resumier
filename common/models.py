@@ -1,7 +1,7 @@
 from __future__ import annotations
 from abc import abstractmethod
 import json
-from typing import List, Type
+from typing import Any, Dict, List, Type
 
 from django.db import models
 from django.conf import settings
@@ -41,7 +41,7 @@ class EmbeddedModelMixin(models.Model):
 
     @classmethod
     @abstractmethod
-    def create_from_base_model(cls, base_model: ModelBaseModel) -> EmbeddedModelMixin:
+    def create_from_schema(cls, base_model: ModelBaseModel):
         pass
 
     def save(self, *args, **kwargs):
@@ -88,6 +88,20 @@ class EmbeddedModelLargeMixin(EmbeddedModelMixin):
 class TimedModel(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        abstract = True
+
+
+class AIGeneratableMixin(models.Model):
+    raw_data = models.JSONField(null=True, blank=True)
+    ai_summary = models.TextField(null=True, blank=True)
+    ModelBaseModel: Type[BaseModel]
+
+    @classmethod
+    @abstractmethod
+    def create_from_ai_data(cls, ai_summary: str, raw_data: Dict[str, Any], base_model: ModelBaseModel):
+        pass
 
     class Meta:
         abstract = True

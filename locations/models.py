@@ -18,7 +18,7 @@ class Location(TimedModel, EmbeddedModelLargeMixin):
     parent = models.ForeignKey('self', on_delete=models.CASCADE, related_name='children', null=True, blank=True)
     
     @classmethod
-    def create_from_base_model(cls, base_model: BaseModel):
+    def create_from_schema(cls, base_model: BaseModel):
         return cls.objects.create(name=base_model.name, level=base_model.level)
     
     def get_embedding_key(self) -> str:

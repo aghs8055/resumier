@@ -22,7 +22,7 @@ class JobCategory(TimedModel, EmbeddedModelLargeMixin):
         return f"{self.name}: {self.description}"
     
     @classmethod
-    def create_from_base_model(cls, base_model: ModelBaseModel):
+    def create_from_schema(cls, base_model: ModelBaseModel):
         return cls.objects.create(name=base_model.name, description=base_model.description)
         
 
