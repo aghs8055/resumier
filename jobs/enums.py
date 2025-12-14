@@ -3,14 +3,6 @@ from enum import Enum
 from common.mixins import ChoicesMixin
 
 
-class ExperienceLevel(ChoicesMixin, Enum):
-    ENTRY = 'entry'
-    MID = 'mid'
-    SENIOR = 'senior'
-    PRINCIPAL = 'principal'
-    OTHER = 'other'
-
-
 class Gender(ChoicesMixin, Enum):
     MALE = 'male'
     FEMALE = 'female'

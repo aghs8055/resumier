@@ -5,19 +5,22 @@ from accounts.models import User
 from profiles.enums import Gender, MilitaryService, LanguageLevel, MaritalStatus, Platform, SkillLevel
 from locations.models import Location
 from locations.enums import LocationType
-from common.enums import EducationLevel, ContractType
+from common.enums import EducationLevel, ContractType, ExperienceLevel, Currency, ProcessStatus
+from profiles.storages import ResumeStorage
+from common.models import TimedModel
 
 
-class Profile(models.Model):
+class Profile(TimedModel):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     about = models.TextField(blank=True)
     birth_date = models.DateField(null=True, blank=True)
     gender = models.CharField(max_length=255, choices=Gender.choices(), null=True, blank=True)
     military_service = models.CharField(max_length=255, choices=MilitaryService.choices(), null=True, blank=True)
     marital_status = models.CharField(max_length=255, choices=MaritalStatus.choices(), null=True, blank=True)
-
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    location = models.ManyToManyField(Location, related_name='profiles')
+    picture = models.ImageField(null=True, )
+    description = models.TextField(null=True, blank=True)
+    ai_summary = models.TextField(null=True, blank=True)
 
     def __str__(self):
         return self.user.phone_number
@@ -27,7 +30,7 @@ class Profile(models.Model):
         verbose_name_plural = 'Profiles'
 
 
-class Education(models.Model):
+class Education(TimedModel):
     profile = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='educations')
     school = models.CharField(max_length=255)
     degree = models.CharField(max_length=255, choices=EducationLevel.choices())
@@ -37,9 +40,6 @@ class Education(models.Model):
     end_date = models.DateField(null=True, blank=True)
     description = models.TextField(blank=True)
 
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
     def __str__(self):
         return self.school
 
@@ -48,7 +48,7 @@ class Education(models.Model):
         verbose_name_plural = 'Educations'
 
 
-class Experience(models.Model):
+class Experience(TimedModel):
     profile = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='experiences')
     company = models.CharField(max_length=255)
     title = models.CharField(max_length=255)
@@ -59,9 +59,6 @@ class Experience(models.Model):
     end_date = models.DateField(null=True, blank=True)
     description = models.TextField(blank=True)
 
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
     def __str__(self):
         return self.company
 
@@ -70,13 +67,10 @@ class Experience(models.Model):
         verbose_name_plural = 'Experiences'
 
 
-class Skill(models.Model):
+class Skill(TimedModel):
     profile = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='skills')
     name = models.CharField(max_length=255)
     level = models.CharField(max_length=255, choices=SkillLevel.choices())
-
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.name
@@ -86,13 +80,10 @@ class Skill(models.Model):
         verbose_name_plural = 'Skills'
 
 
-class Language(models.Model):
+class Language(TimedModel):
     profile = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='languages')
     name = models.CharField(max_length=255)
     level = models.CharField(max_length=255, choices=LanguageLevel.choices())
-
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.name
@@ -102,7 +93,7 @@ class Language(models.Model):
         verbose_name_plural = 'Languages'
 
 
-class Certification(models.Model):
+class Certification(TimedModel):
     profile = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='certifications')
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True)
@@ -112,9 +103,6 @@ class Certification(models.Model):
     url = models.URLField(blank=True, null=True)
     reference_id = models.CharField(max_length=255, blank=True, null=True)
 
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
     def __str__(self):
         return self.title
 
@@ -123,15 +111,13 @@ class Certification(models.Model):
         verbose_name_plural = 'Certifications'
 
 
-class Project(models.Model):
+class Project(TimedModel):
     profile = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='projects')
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True)
     url = models.URLField(blank=True)
     start_date = models.DateField()
-    end_date = models.DateField()
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    end_date = models.DateField(null=True)
 
     def __str__(self):
         return self.name
@@ -141,14 +127,12 @@ class Project(models.Model):
         verbose_name_plural = 'Projects'
 
 
-class Recommendation(models.Model):
+class Recommendation(TimedModel):
     profile = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='recommendations')
     name = models.CharField(max_length=255)
     email = models.EmailField()
     phone_number = models.CharField(max_length=255)
     message = models.TextField()
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.name
@@ -158,12 +142,10 @@ class Recommendation(models.Model):
         verbose_name_plural = 'Recommendations'
 
 
-class SocialMedia(models.Model):
+class SocialMedia(TimedModel):
     profile = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='social_media')
     platform = models.CharField(max_length=255, choices=Platform.choices())
     url = models.URLField()
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.platform
@@ -173,12 +155,10 @@ class SocialMedia(models.Model):
         verbose_name_plural = 'Social Media'
 
 
-class Achievement(models.Model):
+class Achievement(TimedModel):
     profile = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='achievements')
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.name
@@ -188,12 +168,10 @@ class Achievement(models.Model):
         verbose_name_plural = 'Achievements'
 
 
-class Activity(models.Model):
+class Activity(TimedModel):
     profile = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='activities')
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.name
@@ -203,12 +181,10 @@ class Activity(models.Model):
         verbose_name_plural = 'Activities'
 
 
-class Interest(models.Model):
+class Interest(TimedModel):
     profile = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='interests')
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.name
@@ -218,12 +194,10 @@ class Interest(models.Model):
         verbose_name_plural = 'Interests'
         
 
-class Research(models.Model):
+class Research(TimedModel):
     profile = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='research')
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.title
@@ -233,17 +207,27 @@ class Research(models.Model):
         verbose_name_plural = 'Research'
 
 
-class Preferences(models.Model):
-    profile = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='preferences')
+class Preferences(TimedModel):
+    profile = models.OneToOneField(Profile, on_delete=models.CASCADE, related_name='preferences')
     location_type = ArrayField(models.CharField(max_length=255, choices=LocationType.choices()), null=True, blank=True)
     locations = models.ManyToManyField(Location, related_name='preferences')
-
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    def __str__(self):
-        return self.location_type
+    minimum_experience_level = models.CharField(max_length=255, choices=ExperienceLevel.choices(), null=True, blank=True)
+    maximum_experience_level = models.CharField(max_length=255, choices=ExperienceLevel.choices(), null=True, blank=True)
+    minimum_salary = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    currency = models.CharField(max_length=255, choices=Currency.choices(), null=True, blank=True)
+    languages = models.ManyToManyField(Language, related_name='preferences')
 
     class Meta:
         verbose_name = 'Preferences'
         verbose_name_plural = 'Preferences'
+
+
+class ResumeFile(TimedModel):
+    profile = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='resume_files')
+    file = models.FileField(upload_to='', storage=ResumeStorage())
+    process_status = models.CharField(max_length=32, choices=ProcessStatus.choices())
+    raw_data = models.JSONField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = 'Resume File'
+        verbose_name_plural = 'Resume Files'

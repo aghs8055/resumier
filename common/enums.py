@@ -24,3 +24,23 @@ class Currency(ChoicesMixin, Enum):
     EUR = 'eur'
     IRR = 'irr'
     OTHER = 'other'
+
+
+class Language(ChoicesMixin, Enum):
+    PERSIAN = 'fa'
+    ENGLISH = 'en'
+
+
+class ProcessStatus(ChoicesMixin, Enum):
+    PENDING = 'PENDING'
+    PROCESSING = 'PROCESSING'
+    FINISHED = 'FINISHED'
+    FAILED = 'FAILED'
+
+
+class ExperienceLevel(ChoicesMixin, Enum):
+    ENTRY = 'entry'
+    MID = 'mid'
+    SENIOR = 'senior'
+    PRINCIPAL = 'principal'
+    OTHER = 'other'
