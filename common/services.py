@@ -1,4 +1,4 @@
-from typing import Type, List, TypeVar, Generic, Union
+from typing import Type, List, TypeVar, Generic, Union, Optional, Dict, Any
 
 from pgvector.django import CosineDistance
 from openai import OpenAI
@@ -69,7 +69,7 @@ class EmbeddingService(Generic[EmbeddingModelType]):
         if isinstance(resp.result, ObjectSelection):
             return self.model.objects.get(id=resp.result.object_id)
         else:
-            return self.model.create_from_schema(resp.result)
+            return self.model.create_from_base_model(resp.result)
 
 
 AIGeneratableModelType = TypeVar("AIGeneratableModelType", bound=AIGeneratableMixin)
@@ -81,7 +81,7 @@ class AIGeneratableService(Generic[AIGeneratableModelType]):
         self.llm_model = llm_model
         self.client = OpenAI(**settings.LLM_SETTINGS["default"])
 
-    def generate_model_from_raw_data(self, raw_data: dict) -> AIGeneratableModelType:
+    def generate_model_from_raw_data(self, raw_data: dict, default_values: Optional[Dict[str, Any]] = None) -> AIGeneratableModelType:
         class Result(BaseModel):
             model_config = ConfigDict(extra="forbid")
             summary: str = Field(..., description="The summary of the model")
@@ -101,4 +101,11 @@ class AIGeneratableService(Generic[AIGeneratableModelType]):
             ],
             text_format=Result,
         )
-        return self.model.create_from_ai_data(resp.summary, raw_data, resp.output_parsed)
+        
+        if default_values is None:
+            default_values = dict()
+            
+        default_values["ai_summary"] = resp.output_parsed.summary
+        default_values["raw_data"] = raw_data
+        
+        return self.model.create_from_base_model(resp.output_parsed.model, default_values)

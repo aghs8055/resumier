@@ -5,6 +5,7 @@ from django.conf import settings
 from common.client import RestClient
 from common.cache import cache_for
 from companies.enums import CompanySize
+from companies.dto import CompanyInfoDto, OpportunityDetailDto
 
 
 BENEFITS = {
@@ -67,7 +68,7 @@ class CandooClient(RestClient):
         return self.get_json_response("/api/v1/CareerPage/GetAboutUsModuleData").get("data")
 
     @cache_for(24 * 60 * 60, ignore_self=True)
-    def get_benefits(self) -> dict:
+    def get_benefits(self) -> List[str]:
         benefits = self.get_json_response("/api/v1/CareerPage/GetCompanyBenefitsModuleData").get("data")
         return [BENEFITS.get(benefit.get("benefitId")) for benefit in benefits.get("companyBenefitModuleDetailsList", [])]
 
@@ -93,19 +94,29 @@ class CandooClient(RestClient):
     def get_company_location(self) -> str:
         raise NotImplementedError("get_company_location is not implemented")
 
-    def get_company_info(self) -> Dict[str, Any]:
-        return {
-            "company_size": self.get_company_size().value,
-            "company_location": self.get_company_location(),
-            "header_and_footer": self.get_headers_and_footers(),
-            "about_us": self.get_about_us(),
-            "benefits": self.get_benefits(),
-        }
+    def get_company_info(self) -> CompanyInfoDto:
+        return CompanyInfoDto(
+            company_name=self.get_company_name(),
+            size=self.get_company_size(),
+            location_name=self.get_company_location(),
+            perks=self.get_benefits(),
+            extra_info={
+                "header_and_footer": self.get_headers_and_footers(),
+                "about_us": self.get_about_us(),
+            },
+        )
 
     def get_opportunities_id(self) -> List[str]:
         return [job.get("jobGuid") for job in self.get_jobs().get("jobs")]
 
 
-    def get_opportunity_detail(self, opportunity_id: str) -> Dict[str, Any]:
-        return self.get_job_details(opportunity_id)
+    def get_opportunity_detail(self, opportunity_id: str) -> OpportunityDetailDto:
+        job_details = self.get_job_details(opportunity_id)
+        return OpportunityDetailDto(
+            location_name=job_details.get("cityName"),
+            extra_info={
+                **job_details,
+                "job_page": f"{self.address}/job-detail/{opportunity_id}",
+            },
+        )
 

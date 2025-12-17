@@ -1,7 +1,7 @@
 from __future__ import annotations
 from abc import abstractmethod
 import json
-from typing import Any, Dict, List, Type
+from typing import Any, Dict, List, Type, Optional
 
 from django.db import models
 from django.conf import settings
@@ -10,10 +10,9 @@ from pydantic import BaseModel
 from openai import OpenAI
 
 
-class EmbeddedModelMixin(models.Model):
+class SchemaMixin:
     SCHEMA_FIELDS: List[str]
-    ModelBaseModel: Type[BaseModel]
-
+    
     @classmethod
     def get_schema(cls) -> str:
         schema = dict()
@@ -31,6 +30,10 @@ class EmbeddedModelMixin(models.Model):
                 }
         return json.dumps(schema, indent=4)
 
+
+class EmbeddedModelMixin(models.Model, SchemaMixin):
+    ModelBaseModel: Type[BaseModel]
+
     @abstractmethod
     def get_embedding_key(self) -> str:
         pass
@@ -41,11 +44,12 @@ class EmbeddedModelMixin(models.Model):
 
     @classmethod
     @abstractmethod
-    def create_from_schema(cls, base_model: ModelBaseModel):
+    def create_from_base_model(cls, base_model: ModelBaseModel, default_values: Optional[Dict[str, Any]] = None):
         pass
 
-    def save(self, *args, **kwargs):
-        self.embedding = self.get_embedding()
+    def save(self, *args, update_embedding: bool = False, **kwargs):
+        if update_embedding:
+            self.embedding = self.get_embedding()
         return super().save(*args, **kwargs)
 
     class Meta:
@@ -93,14 +97,14 @@ class TimedModel(models.Model):
         abstract = True
 
 
-class AIGeneratableMixin(models.Model):
+class AIGeneratableMixin(models.Model, SchemaMixin):
     raw_data = models.JSONField(null=True, blank=True)
     ai_summary = models.TextField(null=True, blank=True)
     ModelBaseModel: Type[BaseModel]
 
     @classmethod
     @abstractmethod
-    def create_from_ai_data(cls, ai_summary: str, raw_data: Dict[str, Any], base_model: ModelBaseModel):
+    def create_from_base_model(cls, base_model: ModelBaseModel, default_values: Optional[Dict[str, Any]] = None):
         pass
 
     class Meta:

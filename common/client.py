@@ -1,5 +1,8 @@
 import requests
+import logging
 
+
+logger = logging.getLogger(__name__)
 
 class RestClient:
     def __init__(self, base_url: str):
@@ -11,8 +14,8 @@ class RestClient:
             response = requests.request(method, full_url, json=data, headers=headers, params=params, timeout=timeout)
             return response.json()
         except requests.exceptions.JSONDecodeError as e:
-            print(f"Failed to parse json response with status code {response.status_code} from url {full_url}: {response.text}")
+            logger.error(f"Failed to parse json response with status code {response.status_code} from url {full_url}: {response.text}")
             return dict()
         except Exception as e:
-            print(f"An error occured whilte trying to get json response from {full_url}: {e}")
+            logger.error(f"An error occured whilte trying to get json response from {full_url}: {e}")
             return dict()

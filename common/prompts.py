@@ -31,14 +31,14 @@ You are a helpful assistant that can help with generating models from raw data.
 # Instructions
 You will given a raw data and a schema of the model.
 You should generate a model from the raw data according to the schema.
+
+# Context
+<model_schema>
+{model_schema}
+</model_schema>
 """
 
 AI_GENERATABLE_SERVICE_USER_PROMPT_V1 = """
 # Raw data
 {raw_data}
-
-# Schema
-<model_schema>
-{model_schema}
-</model_schema>
 """
