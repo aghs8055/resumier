@@ -1,12 +1,20 @@
-from typing import Optional, Dict, Any, List
+import logging
+from typing import Optional, Dict, Any
+import requests
+from urllib.parse import urlparse
+import os
 
 from django.db import models
+from django.core.files.base import ContentFile
 from pydantic import BaseModel, Field
 
 from companies.enums import CompanySize
 from companies.storages import CompanyLogoStorage
 from locations.models import Location
 from common.models import TimedModel, EmbeddedModelLargeMixin, AIGeneratableMixin
+
+
+logger = logging.getLogger(__name__)
 
 
 class Perk(TimedModel, EmbeddedModelLargeMixin):
@@ -61,6 +69,39 @@ class Company(EmbeddedModelLargeMixin, AIGeneratableMixin, TimedModel):
     def get_embedding_key(self) -> str:
         return f"{self.name}: {self.description}"
 
+    @staticmethod
+    def download_image_from_url(image_url: str, company_name: str) -> Optional[ContentFile]:
+        """Download image from URL and return as ContentFile for S3 upload"""
+        try:
+            response = requests.get(image_url, timeout=10)
+            response.raise_for_status()
+            
+            # Get file extension from URL or content type
+            parsed_url = urlparse(image_url)
+            file_extension = os.path.splitext(parsed_url.path)[1]
+            
+            if not file_extension:
+                content_type = response.headers.get('content-type', '')
+                if 'image/jpeg' in content_type or 'image/jpg' in content_type:
+                    file_extension = '.jpg'
+                elif 'image/png' in content_type:
+                    file_extension = '.png'
+                elif 'image/webp' in content_type:
+                    file_extension = '.webp'
+                elif 'image/gif' in content_type:
+                    file_extension = '.gif'
+                else:
+                    file_extension = '.jpg'
+            
+            safe_company_name = "".join(c for c in company_name if c.isalnum() or c in (' ', '-', '_')).strip()
+            safe_company_name = safe_company_name.replace(' ', '_')
+            filename = f"{safe_company_name}_logo{file_extension}"
+            
+            return ContentFile(response.content, name=filename)
+        except Exception as e:
+            logger.error(f"Error downloading image from {image_url}: {e}")
+            return None
+
     @classmethod
     def create_from_base_model(cls, base_model: ModelBaseModel, default_values: Optional[Dict[str, Any]] = None):
         if default_values is None:
@@ -86,16 +127,20 @@ class Company(EmbeddedModelLargeMixin, AIGeneratableMixin, TimedModel):
         if ai_summary is None:
             raise ValueError("AI summary is required")
 
+        image_file = None
+        if base_model.image is not None:
+            image_file = cls.download_image_from_url(base_model.image, company_name)
+
         company, created = cls.objects.update_or_create(
             name=company_name,
             defaults={
                 "description": base_model.description,
                 "page": base_model.page,
-                "image": base_model.image,
                 "size": size,
                 "location": location,
                 "raw_data": raw_data,
                 "ai_summary": ai_summary,
+                "image": image_file,
             }
         )
         company.perks.set(perks)

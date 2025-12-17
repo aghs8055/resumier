@@ -37,11 +37,12 @@ BENEFITS = {
 
 
 class CandooClient(RestClient):
-    def __init__(self, client_name: str):
+    def __init__(self, client_name: str, page_size: int = 100):
         super().__init__("https://careerapi.hrcando.ir")
         self.address = settings.CANDOO_HR_CLIENTS[client_name]["address"]
         self.auth_key = settings.CANDOO_HR_CLIENTS[client_name]["auth_key"]
         self.client_name = client_name
+        self.page_size = page_size
 
     def get_json_response(
         self,
@@ -77,7 +78,7 @@ class CandooClient(RestClient):
         return self.get_json_response(
             "/api/v1/CareerPage/GetCareerPageJobList",
             "POST",
-            data={"take": 10, "pageNumber": 1, "title": "", "departmentId": "", "cityId": "", "branchId": ""},
+            data={"take": self.page_size, "pageNumber": 1, "title": "", "departmentId": "", "cityId": "", "branchId": ""},
         ).get("data")
 
     @cache_for(24 * 60 * 60, ignore_self=True)
@@ -113,7 +114,8 @@ class CandooClient(RestClient):
     def get_opportunity_detail(self, opportunity_id: str) -> OpportunityDetailDto:
         job_details = self.get_job_details(opportunity_id)
         return OpportunityDetailDto(
-            location_name=job_details.get("cityName"),
+            job_title=job_details.get("title"),
+            location_name=job_details.get("city", {}).get("name", "global"),
             extra_info={
                 **job_details,
                 "job_page": f"{self.address}/job-detail/{opportunity_id}",

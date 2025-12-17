@@ -4,8 +4,8 @@ from companies.enums import CompanySize
 
 
 class YektanetClient(CandooClient, CareerSiteClient):
-    def __init__(self):
-        super().__init__("Yektanet")
+    def __init__(self, page_size: int = 100):
+        super().__init__("Yektanet", page_size)
         
     def get_company_name(self) -> str:
         return "Yektanet"

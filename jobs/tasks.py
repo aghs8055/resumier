@@ -4,6 +4,9 @@ from celery import shared_task
 
 from companies.clients import YektanetClient
 from jobs.services import OpportunityService
+from locations.services import LocationService
+from companies.services import CompanyService, PerkService
+from jobs.services import JobCategoryService
 
 
 logger = logging.getLogger(__name__)
@@ -12,15 +15,17 @@ clients = [YektanetClient()]
 
 @shared_task
 def update_opportunities():
+    location_service = LocationService()
+    job_category_service = JobCategoryService()
+    perk_service = PerkService()
     for client in clients:
-        opportunity_service = OpportunityService(client)
+        company_service = CompanyService(client, location_service, perk_service)
+        opportunity_service = OpportunityService(client, location_service, company_service, job_category_service)
         try:
-            opportunities_id = client.get_opportunities_id()
-            for opportunity_id in opportunities_id:
-                try:
-                    opportunity_service.get_or_create_opportunity(opportunity_id)
-                    logger.info(f"Processed opportunity {opportunity_id}")
-                except Exception as e:
-                    logger.error(f"Failed to process opportunity {opportunity_id}: {e}")
+            try:
+                opportunity_service.get_or_create_opportunities(client.get_opportunities_id())
+                logger.info(f"Processed opportunities from {client}")
+            except Exception as e:
+                logger.error(f"Failed to process opportunities from {client}: {e}")
         except Exception as e:
             logger.error(f"Failed to fetch opportunities from {client}: {e}")

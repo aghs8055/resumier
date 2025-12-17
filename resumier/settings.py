@@ -13,6 +13,8 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 import os
 from pathlib import Path
 
+from langfuse import Langfuse
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -91,6 +93,15 @@ DATABASES = {
         'PASSWORD': os.environ.get('DB_PASSWORD', 'resumier'),
         'HOST': os.environ.get('DB_HOST', 'localhost'),
         'PORT': os.environ.get('DB_PORT', 5432),
+    }
+}
+
+
+# Cache settings
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+        'LOCATION': os.environ.get('REDIS_LOCATION', 'redis://localhost:6379'),
     }
 }
 
@@ -174,3 +185,9 @@ LLM_SETTINGS = {
         "api_key": os.getenv("LLM_API_KEY"),
     },
 }
+
+Langfuse(
+    public_key=os.getenv("LANGFUSE_PUBLIC_KEY"),
+    secret_key=os.getenv("LANGFUSE_SECRET_KEY"),
+    host=os.getenv("LANGFUSE_HOST"),
+)

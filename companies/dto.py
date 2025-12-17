@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 
 from companies.enums import CompanySize
 
@@ -15,5 +15,6 @@ class CompanyInfoDto:
 
 @dataclass
 class OpportunityDetailDto:
+    job_title: Optional[str]
     location_name: str
     extra_info: Dict[str, Any]

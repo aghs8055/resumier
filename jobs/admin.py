@@ -1,6 +1,13 @@
 from django.contrib import admin
 
-from jobs.models import Opportunity
+from jobs.models import Opportunity, JobCategory
+
+
+@admin.register(JobCategory)
+class JobCategoryAdmin(admin.ModelAdmin):
+    list_display = ["name", "description"]
+    search_fields = ["name", "description"]
+    ordering = ["-created_at"]
 
 
 @admin.register(Opportunity)

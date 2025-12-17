@@ -15,14 +15,14 @@ class JobCategory(TimedModel, EmbeddedModelLargeMixin):
     SCHEMA_FIELDS = ["name", "description"]
 
     class ModelBaseModel(BaseModel):
-        name: str = Field(..., description="The name of the job category in Title Case format")
-        description: str = Field(..., description="The description of the job category")
+        name: str = Field(..., description="Name of general category that the job title belongs to in Title Case format. Note that this is not the job title, it's the category of the job title.")
+        description: str = Field(..., description="The description of the category and the jobs that can be placed in this category")
 
     name = models.CharField(max_length=255, unique=True)
     description = models.TextField()
 
     def get_embedding_key(self) -> str:
-        return f"{self.name}: {self.description}"
+        return self.name
 
     @classmethod
     def create_from_base_model(cls, base_model: ModelBaseModel, _: Optional[Dict[str, Any]] = None):
@@ -136,6 +136,7 @@ class Opportunity(EmbeddedModelLargeMixin, AIGeneratableMixin, TimedModel):
         reference_id = default_values.get("reference_id")
         company = default_values.get("company")
         location = default_values.get("location")
+        category = default_values.get("category")
 
         if raw_data is None:
             raise ValueError("Raw data is required")
@@ -168,7 +169,8 @@ class Opportunity(EmbeddedModelLargeMixin, AIGeneratableMixin, TimedModel):
                 "raw_data": raw_data,
                 "ai_summary": ai_summary,
                 "is_active": True,
-            }
+                "category": category,
+            },
         )
         opportunity.save(update_embedding=True)
         return opportunity
