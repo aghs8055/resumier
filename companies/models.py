@@ -76,7 +76,6 @@ class Company(EmbeddedModelLargeMixin, AIGeneratableMixin, TimedModel):
             response = requests.get(image_url, timeout=10)
             response.raise_for_status()
             
-            # Get file extension from URL or content type
             parsed_url = urlparse(image_url)
             file_extension = os.path.splitext(parsed_url.path)[1]
             
