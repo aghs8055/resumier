@@ -2,7 +2,7 @@ import logging
 
 from celery import shared_task
 
-from companies.clients import YektanetClient
+from companies.clients import YektanetClient, BitpinClient, SystemGroupClient
 from jobs.services import OpportunityService
 from locations.services import LocationService
 from companies.services import CompanyService, PerkService
@@ -10,7 +10,7 @@ from jobs.services import JobCategoryService
 
 
 logger = logging.getLogger(__name__)
-clients = [YektanetClient()]
+clients = [YektanetClient(), BitpinClient(), SystemGroupClient()]
 
 
 @shared_task

@@ -176,6 +176,14 @@ CANDOO_HR_CLIENTS = {
         "address": "careers.yektanet.com",
         "auth_key": os.getenv("YEKTANET_AUTH_KEY"),
     },
+    "Bitpin": {
+        "address": "jobs.bitpin.ir",
+        "auth_key": os.getenv("BITPIN_AUTH_KEY"),
+    },
+    "System Group": {
+        "address": "jobs.systemgroup.ir",
+        "auth_key": os.getenv("SYSTEM_GROUP_AUTH_KEY"),
+    },
 }
 
 # LLM settings
