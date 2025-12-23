@@ -180,10 +180,6 @@ CANDOO_HR_CLIENTS = {
         "address": "jobs.bitpin.ir",
         "auth_key": os.getenv("BITPIN_AUTH_KEY"),
     },
-    "System Group": {
-        "address": "jobs.systemgroup.ir",
-        "auth_key": os.getenv("SYSTEM_GROUP_AUTH_KEY"),
-    },
 }
 
 # LLM settings
@@ -194,7 +190,7 @@ LLM_SETTINGS = {
     },
 }
 
-Langfuse(
+LANGFUSE_CLIENT = Langfuse(
     public_key=os.getenv("LANGFUSE_PUBLIC_KEY"),
     secret_key=os.getenv("LANGFUSE_SECRET_KEY"),
     host=os.getenv("LANGFUSE_HOST"),
