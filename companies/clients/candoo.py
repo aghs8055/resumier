@@ -60,34 +60,44 @@ class CandooClient(RestClient):
         }
         return super().get_json_response(url, method, url_params, data, headers, params, timeout)
 
-    @cache_for(24 * 60 * 60, ignore_self=True)
     def get_headers_and_footers(self) -> dict:
-        return self.get_json_response("/api/v1/CareerPage/GetCareerPageHeaderFooterData").get("data")
+        @cache_for(24 * 60 * 60, key_prefix=f"candoo:{self.client_name}")
+        def _get_headers_and_footers():
+            return self.get_json_response("/api/v1/CareerPage/GetCareerPageHeaderFooterData").get("data")
+        return _get_headers_and_footers()
 
-    @cache_for(24 * 60 * 60, ignore_self=True)
     def get_about_us(self) -> dict:
-        return self.get_json_response("/api/v1/CareerPage/GetAboutUsModuleData").get("data")
+        @cache_for(24 * 60 * 60, key_prefix=f"candoo:{self.client_name}")
+        def _get_about_us():
+            return self.get_json_response("/api/v1/CareerPage/GetAboutUsModuleData").get("data")
+        return _get_about_us()
 
-    @cache_for(24 * 60 * 60, ignore_self=True)
     def get_benefits(self) -> List[str]:
-        benefits = self.get_json_response("/api/v1/CareerPage/GetCompanyBenefitsModuleData").get("data")
-        return [BENEFITS.get(benefit.get("benefitId")) for benefit in benefits.get("companyBenefitModuleDetailsList", [])]
+        @cache_for(24 * 60 * 60, key_prefix=f"candoo:{self.client_name}")
+        def _get_benefits():
+            benefits = self.get_json_response("/api/v1/CareerPage/GetCompanyBenefitsModuleData").get("data")
+            return [BENEFITS.get(benefit.get("benefitId")) for benefit in benefits.get("companyBenefitModuleDetailsList", [])]
+        return _get_benefits()
 
-    @cache_for(24 * 60 * 60, ignore_self=True)
     def get_jobs(self) -> dict:
-        return self.get_json_response(
-            "/api/v1/CareerPage/GetCareerPageJobList",
-            "POST",
-            data={"take": self.page_size, "pageNumber": 1, "title": "", "departmentId": "", "cityId": "", "branchId": ""},
-        ).get("data")
+        @cache_for(24 * 60 * 60, key_prefix=f"candoo:{self.client_name}")
+        def _get_jobs():
+            return self.get_json_response(
+                "/api/v1/CareerPage/GetCareerPageJobList",
+                "POST",
+                data={"take": self.page_size, "pageNumber": 1, "title": "", "departmentId": "", "cityId": "", "branchId": ""},
+            ).get("data")
+        return _get_jobs()
 
-    @cache_for(24 * 60 * 60, ignore_self=True)
     def get_job_details(self, job_guid: str) -> dict:
-        return self.get_json_response(
-            f"/api/v1/CareerPage/GetCareerPageJobPageInfoByJobGuid/{job_guid}",
-            "GET",
-            url_params={"job_guid": job_guid},
-        ).get("data")
+        @cache_for(24 * 60 * 60, key_prefix=f"candoo:{self.client_name}")
+        def _get_job_details(job_guid):
+            return self.get_json_response(
+                f"/api/v1/CareerPage/GetCareerPageJobPageInfoByJobGuid/{job_guid}",
+                "GET",
+                url_params={"job_guid": job_guid},
+            ).get("data")
+        return _get_job_details(job_guid)
 
     def get_company_size(self) -> CompanySize:
         raise NotImplementedError("get_company_size is not implemented")
