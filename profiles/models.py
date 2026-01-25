@@ -17,8 +17,8 @@ class Profile(TimedModel):
     gender = models.CharField(max_length=255, choices=Gender.choices(), null=True, blank=True)
     military_service = models.CharField(max_length=255, choices=MilitaryService.choices(), null=True, blank=True)
     marital_status = models.CharField(max_length=255, choices=MaritalStatus.choices(), null=True, blank=True)
-    location = models.ManyToManyField(Location, related_name='profiles')
-    picture = models.ImageField(null=True, )
+    location = models.ManyToManyField(Location, related_name='profiles', null=True, blank=True)
+    picture = models.ImageField(null=True, blank=True)
     description = models.TextField(null=True, blank=True)
     ai_summary = models.TextField(null=True, blank=True)
 
