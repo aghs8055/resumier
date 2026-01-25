@@ -231,3 +231,35 @@ class ResumeFile(TimedModel):
     class Meta:
         verbose_name = 'Resume File'
         verbose_name_plural = 'Resume Files'
+
+
+class ResumeUpload(TimedModel):
+    """
+    Model for storing uploaded resume files that need to be processed and converted to profiles.
+    This is used before a profile exists - the processing service will create the profile from the resume.
+    """
+    file = models.FileField(upload_to='', storage=ResumeStorage())
+    process_status = models.CharField(
+        max_length=32, 
+        choices=ProcessStatus.choices(),
+        default=ProcessStatus.PENDING.value
+    )
+    raw_data = models.JSONField(null=True, blank=True, help_text="Raw extracted data from the resume")
+    parsed_data = models.JSONField(null=True, blank=True, help_text="Structured parsed data from AI processing")
+    error_message = models.TextField(null=True, blank=True, help_text="Error message if processing failed")
+    profile = models.ForeignKey(
+        Profile, 
+        on_delete=models.SET_NULL, 
+        related_name='resume_uploads',
+        null=True, 
+        blank=True,
+        help_text="The profile created from this resume upload"
+    )
+
+    def __str__(self):
+        return f"Resume Upload {self.id} - {self.process_status}"
+
+    class Meta:
+        verbose_name = 'Resume Upload'
+        verbose_name_plural = 'Resume Uploads'
+        ordering = ['-created_at']
